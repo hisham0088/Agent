@@ -43,4 +43,17 @@ def get_vid(query):
           pattern,
           text
         )
-    )
+        if match:
+     quary = match.group(1) 
+     break
+quary = quary.strip()
+void_id = get_vid(quary)
+
+if not video_id:
+  return None
+return(
+  "https://www.youtube .com/embed/"
+  + video_id
+  + "?autoplay=18mute=0"
+)
+  
