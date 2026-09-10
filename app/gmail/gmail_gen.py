@@ -6,56 +6,85 @@ import random
 import urllib.request
 import urllib.error
 
-API_KEY = os.getenv("GEMINI_API_KEY","")I
-MODEL = os.getenv("GEMINI_MODEL","gemini-3.5-flash")
+API_KEY = os.getenv("GEMINI_API_KEY","")
+MODEL=os.getenv("GEMINI_MODEL","gemini-3.5-flash")
 
-def generate_email_with_gemini(command):
+def generation_email_with_gemini(command):
   if not API_KEY:
-    raise Runtime error("GEMINI_API_KEY is missing,")
+    raise RuntimeError("GEMINI_API_KEY is misssing.")
 
-prompt=f"""
-You are a professional Gmail Email writing assistant.
+promt=f"""
+you are a professional gmail email writing assistant.
 
-convert the user's voice command into aprofessional email.
+covert the user's voice command into a professional email.
+
 Rules:
-
 -Do not copy the command literally.
--Do not explain anything.
--Do not invent names,places,companies,attachments,or facts.
--Keep the email natural and concise. 
+-Do not explain anything .
+-Do not invert names ,dates, prices, companies , attachment, or facts.
+-Keep the email natural and concies.
 
-output exactly:
+Output exactly:
 
-SUBJECT<Subject>
-BODY:
-<email body>
-
-User command
-(command)
+SUBJECT:<subject>
+BODY:<email body>
+User command:<command>
 """
 
-  url=(
-    f"https://generativelanguage.googleapis.com/"
-    f"v1beta/models/(MODEL):generateContent"
-  )
+url=(
+  f"https://generativelanguage.googleapis.com/"
+  f"vibeta/models/(MODEL):generateContent"
+)
 
-payload = {
-  "contents":[{"trext":prompt}}}];
-  "generationconig":{
-  "Temperature":0.7.
-  "maxOutputTockens":800
-  } 
-}
+payload=(
+  "contents":[{"text":prompt}],
+"generationConfig":(
+  "temperature":0.7,
+  "maxoutputToken":800
+)
+)
 
 req=urllib.request.Request(
   url,
   data=json.dumps(payload).encode(),
   headers={
-    "content-type":"application json",
+    "content-type":"application/json",
     "x-goog-api-key":API_KEY
   },
   method="POST"
 )
+
 for attempt in range(4):
   try:
     with urllib.request.urlopen(req,timeout=30) as response:
+      data=json.loads(response.read.decode())
+
+text=data["candidates"][0]["content"]["parts"][0]["text"]
+text=re.sub(r"'''(?:text)?|'''","",text).strip()
+
+subject=re.search(r"SUBJECT:\s*(.+)",text,re.1)
+body=re.search(r"BODY:\s*([\s\s]+)",text,re.1)
+
+if not subject or not body:
+  raise RuntimeError("Gemini returned an invalid email format.")
+
+return{
+
+  "subject":subject.group(1).strip(),
+  "body":body.group(1).strip()
+}
+
+except urllib.error.HTTPError as e:
+if e.code !=429 or attempt == 3:
+  try:
+    detail=e.read().decode()
+  except Exception:
+    detail=str(e)
+  raise RuntimeError(f"Gemini API error :(detail)")
+
+time.sleep((2 ** attempt)+ random.random())
+
+except Exception:
+if attempt == 3:
+  raise
+time.sleep(1)
